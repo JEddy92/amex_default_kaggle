@@ -16,5 +16,5 @@ def get_agg_features(df_in : pd.DataFrame, group_col : str,
 
     df_agg = df_in.groupby(group_col)[agg_features].agg(agg_funcs)
     df_agg.columns = ['_'.join(x) for x in df_agg.columns]
-    return df_agg.reset_index(drop=True)
+    return df_agg.reset_index()
 
