@@ -11,5 +11,5 @@ Code for American Express' Default Prediction competition, hosted on Kaggle
 |Data aug: multiple statements| Use multiple (e.g. 2nd last) statements for training data| 2 statements does improve a default feature model |
 |Downsampling for model diversity| E.g. sandwich technique| `scale_pos_weight` did not add to ensemble |
 |Excl. internal score for diversity| Model w/o super feature in ensemble| * |
-|Difference/trend features| Diffs of various period| * |
+|Difference/trend features| Diffs of various period| Improved CV by something like .005, but LB difference looks smaller - possible trend not as important for test data? |
 |Matrix factorization cats | Apply to full category history on both train & test -- possible way to extract test data into the training feature set | * |
