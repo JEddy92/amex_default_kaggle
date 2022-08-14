@@ -41,6 +41,7 @@ def gen_sequence_data(df_in : pd.DataFrame):
     df_in[df_in == -1] = np.nan
 
     # Fill leading null values
+    print('filling leading null values')
     df_in = df_in.groupby('customer_ID') \
                  .apply(lambda grp: grp.where(grp.ffill().notna(), LEADING_NULL_VALUE))
 
@@ -80,21 +81,21 @@ def gen_sequence_data(df_in : pd.DataFrame):
 
     return np_return, df_cus
 
-# print('Sequence Converting Train')
-# df_train = pd.read_parquet(CFG.train_feature_file)
-# # df_train = df_train.loc[df_train['customer_ID'].isin(trial_cus),
-# #                         ['customer_ID', 'S_2', 'P_2', 'D_39', 'D_115']]
+print('Sequence Converting Train')
+df_train = pd.read_parquet(CFG.train_feature_file)
+# df_train = df_train.loc[df_train['customer_ID'].isin(trial_cus),
+#                         ['customer_ID', 'S_2', 'P_2', 'D_39', 'D_115']]
 
-# seq_train, seq_train_cus = gen_sequence_data(df_train)
-# print(seq_train.shape)
-# print(seq_train_cus.shape)
+seq_train, seq_train_cus = gen_sequence_data(df_train)
+print(seq_train.shape)
+print(seq_train_cus.shape)
 
-# with open(CFG.output_dir + 'seq_train.npy', 'wb') as f:
-#     np.save(f, seq_train)
-# seq_train_cus.to_parquet(CFG.output_dir + 'seq_train_customers.parquet')   
+with open(CFG.output_dir + 'seq_train.npy', 'wb') as f:
+    np.save(f, seq_train)
+seq_train_cus.to_parquet(CFG.output_dir + 'seq_train_customers.parquet')   
 
-# del df_train, seq_train, seq_train_cus
-# gc.collect()
+del df_train, seq_train, seq_train_cus
+gc.collect()
 
 print('Sequence Converting Test 0')
 df_test = pd.read_parquet(CFG.test_feature_file)

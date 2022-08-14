@@ -55,7 +55,7 @@ from training import helpers_flat_training as helpers_tr
 # [0.804267183068762, 0.7974950311791993, 0.8008644254587591, 0.8017920253525481, 0.7987352953989315]
 
 logreg_kwargs = {
-    'C' : .7, #. 035  
+    'C' : 1, #. 035  
     'max_iter' : 200, 
     'random_state' : CFG_P.seed        
 }
@@ -63,7 +63,11 @@ logreg_kwargs = {
 scaler = StandardScaler()
 # scaler = MinMaxScaler()
 
-model_names = ['keras_flat_full',
+model_names = ['keras_transformer_cat_enc_cons_aug_8',
+               #'keras_transformer_base_cat_enc_v2',
+               #'keras_transformer_base_cat_enc',
+               #'keras_transformer_base',
+               #'keras_flat_full',
                'keras_flat_2aug',
                #'keras_flat_base_v5_10F_bags',
                #'keras_flat_base_v4_bags',
@@ -124,6 +128,9 @@ tr_feature_files = [CFG_P.model_output_dir + f'{m}/oof_preds.parquet' for m in m
 te_feature_files = [CFG_P.model_output_dir + f'{m}/test_preds.csv' for m in model_names]
 
 df_train = helpers_tr.load_flat_features(tr_feature_files, is_meta=True)
+
+# df_train = pd.merge(df_train, pd.read_parquet(CFG_P.output_dir + 'train_labels_w_10_p2_strat_folds.parquet'),
+#                     on='customer_ID')
 df_train = pd.merge(df_train, pd.read_parquet(CFG_P.output_dir + 'train_labels_w_p2_strat_folds.parquet'),
                     on='customer_ID')
 # df_train = pd.merge(df_train, pd.read_parquet(CFG_P.output_dir + 'train_labels_w_folds.parquet'),
