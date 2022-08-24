@@ -10,7 +10,7 @@ lgb_params = {
     'metric': 'mae',
     'seed': CFG.seed,
     'num_leaves': 64, 
-    'learning_rate': 0.1,
+    'learning_rate': 0.1, #.2
     'feature_fraction': 0.75,
     'bagging_freq': 10,
     'bagging_fraction': 0.95,
@@ -22,7 +22,7 @@ lgb_params = {
 
 lgb_kwargs = {
     'params' : lgb_params,
-    'num_boost_round' : 400,
+    'num_boost_round' : 400, #100
     'verbose_eval' : 100,
 }
 
@@ -56,13 +56,13 @@ for i, f in enumerate(null_feats):
     print(f'Imputing {f}, the {i}th feature of {len(null_feats)}')
 
     # FE - add 1 lag feature for each customer on the fly
-    lag_feat = f + '_lag'
-    df_comb[lag_feat] = df_comb.groupby('customer_ID')[f].shift()
+    # lag_feat = f + '_lag'
+    # df_comb[lag_feat] = df_comb.groupby('customer_ID')[f].shift()
 
-    X_train = df_comb[~null_grid[f]][features + [lag_feat]].drop(columns=[f])  
+    X_train = df_comb[~null_grid[f]][features].drop(columns=[f])  
     y_train = df_comb[~null_grid[f]][f] 
 
-    X_impute = df_comb[null_grid[f]][features + [lag_feat]].drop(columns=[f])
+    X_impute = df_comb[null_grid[f]][features].drop(columns=[f])
 
     lgb_train = lgb.Dataset(X_train, y_train, categorical_feature = cat_features)
     
@@ -73,13 +73,12 @@ for i, f in enumerate(null_feats):
     gc.collect()
 
     df_comb_imputed.loc[null_grid[f],f] = model.predict(X_impute)
-    df_comb = df_comb.drop(columns=[lag_feat])
 
 print(df_comb_imputed.isnull().sum())
 print(df_comb_imputed.shape)
 
 df_comb_imputed[df_comb_imputed['dset'] == 'train'].drop(columns='dset') \
-    .to_parquet(CFG.output_dir + 'train_lgb_imputed.parquet')
+    .to_parquet(CFG.output_dir + 'train_lgb_400_imputed.parquet')
 
 df_comb_imputed[df_comb_imputed['dset'] == 'test'].drop(columns='dset') \
-    .to_parquet(CFG.output_dir + 'test_lgb_imputed.parquet')
+    .to_parquet(CFG.output_dir + 'test_lgb_400_imputed.parquet')

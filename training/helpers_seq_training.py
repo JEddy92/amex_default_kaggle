@@ -14,6 +14,33 @@ from tensorflow.keras import layers
 from preprocessing.config_preproc import PreprocConfig as CFG_P
 from utils.evaluation import amex_metric
 
+# credit to Chris Deotte for base version
+# https://www.kaggle.com/code/cdeotte/tensorflow-transformer-0-790
+# class TransformerBlock(layers.Layer):
+#     def __init__(self, embed_dim, feat_dim, num_heads, ff_dim, rate=0.1):
+#         super(TransformerBlock, self).__init__()
+#         self.supports_masking = True
+#         self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
+#         self.ffn = keras.Sequential(
+#             [layers.Dense(ff_dim, activation="gelu"), layers.Dense(feat_dim),]
+#         )
+#         self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)
+#         self.layernorm2 = layers.LayerNormalization(epsilon=1e-6)
+#         self.dropout1 = layers.Dropout(rate)
+#         self.dropout2 = layers.Dropout(rate)
+
+#     # def compute_mask(self, inputs, mask=None):
+#     #     return mask
+
+#     def call(self, inputs, training, mask=None):
+#         attention_mask = mask[:, tf.newaxis, tf.newaxis, :]
+#         attn_output = self.att(inputs, inputs, attention_mask=attention_mask)
+#         attn_output = self.dropout1(attn_output, training=training)
+#         out1 = self.layernorm1(inputs + attn_output)
+#         ffn_output = self.ffn(out1)
+#         ffn_output = self.dropout2(ffn_output, training=training)
+#         return self.layernorm2(out1 + ffn_output)
+
 # credit to Chris Deotte
 # https://www.kaggle.com/code/cdeotte/tensorflow-transformer-0-790
 class TransformerBlock(layers.Layer):
@@ -35,6 +62,33 @@ class TransformerBlock(layers.Layer):
         ffn_output = self.ffn(out1)
         ffn_output = self.dropout2(ffn_output, training=training)
         return self.layernorm2(out1 + ffn_output)
+
+# https://towardsdatascience.com/the-time-series-transformer-2a521a0efad3
+class Time2Vec(keras.layers.Layer):
+    def __init__(self, kernel_size=1):
+        super(Time2Vec, self).__init__(trainable=True, name='Time2VecLayer')
+        self.k = kernel_size
+    
+    def build(self, input_shape):
+        # trend
+        self.wb = self.add_weight(name='wb',shape=(input_shape[1],),initializer='uniform',trainable=True)
+        self.bb = self.add_weight(name='bb',shape=(input_shape[1],),initializer='uniform',trainable=True)
+        # periodic
+        self.wa = self.add_weight(name='wa',shape=(1, input_shape[1], self.k),initializer='uniform',trainable=True)
+        self.ba = self.add_weight(name='ba',shape=(1, input_shape[1], self.k),initializer='uniform',trainable=True)
+        super(Time2Vec, self).build(input_shape)
+    
+    def call(self, inputs, **kwargs):
+        bias = self.wb * inputs + self.bb
+        dp = K.dot(inputs, self.wa) + self.ba
+        wgts = K.sin(dp) # or K.cos(.)
+
+        ret = K.concatenate([K.expand_dims(bias, -1), wgts], -1)
+        ret = K.reshape(ret, (-1, inputs.shape[1]*(self.k+1)))
+        return ret
+    
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1]*(self.k + 1))
 
 def train_save_seq_model(X_train_all : np.ndarray, train_cus_folds_y : pd.DataFrame,
                          X_test : np.ndarray, test_cus : pd.DataFrame,  
@@ -78,7 +132,8 @@ def train_save_seq_model(X_train_all : np.ndarray, train_cus_folds_y : pd.DataFr
 
         for _ in range(runs_per_fold):
 
-            model, predict_func = get_model(X_train, y_train, X_val, y_val, 
+            model, predict_func = get_model(X_train, y_train, X_val, y_val,
+                                            X_test, 
                                             model_kwargs)
 
             oof_preds.loc[oof_mask,'oof_pred'] += predict_func(model, X_val) / runs_per_fold
@@ -120,6 +175,7 @@ def train_save_seq_model(X_train_all : np.ndarray, train_cus_folds_y : pd.DataFr
 
 def get_seq_keras_model(X_train : np.ndarray, y_train : pd.Series, 
                         X_val : np.ndarray, y_val : pd.Series,
+                        X_test : np.ndarray, 
                         keras_kwargs : dict):
     
     model = keras_kwargs['architecture_constructor']()
@@ -129,5 +185,59 @@ def get_seq_keras_model(X_train : np.ndarray, y_train : pd.Series,
 
     def predict_func(model, X):
         return model.predict(X, verbose=0).flatten()
+
+    return model, predict_func
+
+def get_seq_keras_model_w_pretrain(X_train : np.ndarray, y_train : pd.Series, 
+                                   X_val : np.ndarray, y_val : pd.Series,
+                                   X_test : np.ndarray, 
+                                   keras_kwargs : dict):
+    
+    # Pretrain Step
+    # assumes P_2 is set as first column, pretrain target is last P_2 value
+    X_comb = np.concatenate([X_train, X_test], axis=0)
+    y_pretrain = X_comb[:,-1,0]  
+    X_comb = X_comb[:,:,1:] # drop P_2
+
+    pretrain_model = keras_kwargs['pretrain_architecture_constructor']()
+    print(pretrain_model.summary())
+    pretrain_model.fit(X_comb, y_pretrain, 
+                       validation_split=.2, 
+                       **keras_kwargs['pretrain_fit_kwargs'])
+
+    del X_comb
+    gc.collect()
+
+    # drop P_2
+    X_train = X_train[:,:,1:]
+    X_val = X_val[:,:,1:]
+    X_test = X_test[:,:,1:]
+
+    # pretrain_model.save('model_temp')
+    pretrained_base = keras.Model(pretrain_model.get_layer('input').input, 
+                                  pretrain_model.get_layer('transformer_out').output)
+    print(pretrained_base.summary())
+
+    model = keras_kwargs['train_architecture_constructor'](pretrained_base)
+    for l in model.layers[:2]:
+        l.trainable = False
+    print(model.summary())
+
+    # warm up
+    model.fit(X_train, y_train, 
+              validation_data=(X_val, y_val), 
+              **keras_kwargs['train_warmup_kwargs'])
+
+    for l in model.layers[:2]:
+        l.trainable = True        
+
+    print(model.summary())
+    # model.load_weights('model_temp', by_name=True)
+    model.fit(X_train, y_train, 
+              validation_data=(X_val, y_val), 
+              **keras_kwargs['train_fit_kwargs'])
+
+    def predict_func(model, X):
+        return model.predict(X[:,:,1:], verbose=0).flatten() # drop P_2 in predict
 
     return model, predict_func

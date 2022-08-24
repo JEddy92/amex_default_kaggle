@@ -1,4 +1,5 @@
 import gc
+import psutil
 from typing import Callable
 import os
 import joblib
@@ -13,9 +14,11 @@ import xgboost as xgb
 from catboost import CatBoostClassifier
 import tensorflow as tf
 from tensorflow.keras.models import Model
+from pytorch_tabnet.pretraining import TabNetPretrainer
+from pytorch_tabnet.tab_model import TabNetClassifier
 
 from preprocessing.config_preproc import PreprocConfig as CFG_P
-from utils.evaluation import amex_metric, amex_metric_np_lgb, amex_metric_np_xgb
+from utils.evaluation import amex_metric, amex_metric_np_lgb, amex_metric_np_xgb, AmexMetricTorch
 
 def load_flat_features(fnames : list, parser : Callable = pd.read_parquet, 
                        is_meta : bool = False) -> pd.DataFrame:
@@ -324,6 +327,40 @@ def get_flat_keras_model(X_train : pd.DataFrame, y_train : pd.Series,
 def get_keras_imp(model : Model) -> int:
     return 0 # not defined
 
+def get_tabnet_model(X_train : pd.DataFrame, y_train : pd.Series, 
+                     X_val : pd.DataFrame, y_val : pd.Series,
+                     cat_features : list, tabnet_kwargs : dict):
+
+    X_train, y_train = X_train.to_numpy(), y_train.to_numpy()
+    X_val, y_val = X_val.to_numpy(), y_val.to_numpy()
+
+    unsupervised = TabNetPretrainer(**tabnet_kwargs['pretrain_constructor_kwargs'])
+    unsupervised.fit(
+            X_train=X_train,
+            eval_set=[X_val],
+            **tabnet_kwargs['pretrain_fit_kwargs']
+        )
+        
+    model = TabNetClassifier(**tabnet_kwargs['train_constructor_kwargs'])
+    model.fit(
+        X_train=X_train,
+        y_train=y_train,
+        eval_set=[(X_val, y_val)],
+        num_workers=psutil.cpu_count(),
+        drop_last=False,
+        eval_metric=[AmexMetricTorch],
+        from_unsupervised=unsupervised,
+        **tabnet_kwargs['train_fit_kwargs']
+    )
+
+    def predict_func(model, X):
+        return model.predict_proba(X.to_numpy())[:, 1]
+
+    return model, predict_func
+
+def get_tabnet_imp(model : Model) -> int:
+    return 0 # not defined
+
 def get_logreg_model(X_train : pd.DataFrame, y_train : pd.Series,
                      X_val : pd.DataFrame, y_val : pd.Series,
                      cat_features : list, logreg_kwargs : dict) -> LogisticRegression:
@@ -332,7 +369,7 @@ def get_logreg_model(X_train : pd.DataFrame, y_train : pd.Series,
     model.fit(X_train, y_train)
 
     def predict_func(model, X):
-        return model.predict_proba(X)[:,1]
+        return model.predict_proba(X.to_numpy())[:,1]
 
     return model, predict_func
 
@@ -352,3 +389,27 @@ def get_avgrank_model(X_train : pd.DataFrame, y_train : pd.Series,
 
 def get_avgrank_imp(model : str) -> np.ndarray:
     return 0
+
+def get_lgb_residual_learner(X_train : pd.DataFrame, y_train : pd.Series, 
+                             X_val : pd.DataFrame, y_val : pd.Series,
+                             cat_features : list, lgb_kwargs : dict) -> lgb.Booster:
+
+    resids_train = y_train - X_train['preds']
+    resids_val = y_val - X_val['preds']
+    X_train = X_train.drop(columns=['preds'])
+    X_val = X_val.drop(columns=['preds'])
+
+    lgb_train = lgb.Dataset(X_train, resids_train, categorical_feature = cat_features)
+    lgb_val = lgb.Dataset(X_val, resids_val, categorical_feature = cat_features)
+    
+    model = lgb.train(train_set = lgb_train, valid_sets = [lgb_train, lgb_val],
+                      **lgb_kwargs)
+
+    del lgb_train, lgb_val
+    gc.collect()
+
+    def predict_func(model, X):
+        preds_X = X['preds']
+        return model.predict(X.drop(columns=['preds'])) + preds_X
+
+    return model, predict_func

@@ -74,6 +74,8 @@ def gen_sequence_data(df_in : pd.DataFrame, df_cat_enc : pd.DataFrame):
     df_in.loc[missing_mask] = df_in.loc[missing_mask].fillna(df_in_mins - df_in_stds * MISSING_NULL_OFFSET)
 
     # Forward fill extant statements with missing values (at random)
+    # ACTUALLY THIS WONT WORK BECAUSE IT WILL FORWARD FILL THE MISSING STATEMENT VALUES
+    # INTO NULLS FOR PRESENT
     print('Forward filling null values')
     df_in = df_in.groupby('customer_ID') \
                  .ffill()

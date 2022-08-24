@@ -102,7 +102,10 @@ from training import helpers_flat_training as helpers_tr
 # [0.8047207745104467, 0.7991759875933411, 0.8027931174309437, 0.8052413030594763, 0.8029851351339552]
 
 logreg_kwargs = {
+    'penalty' : 'elasticnet',
+    'solver' : 'saga',
     'C' : .05, # .1 . 035  
+    'l1_ratio' : .5,
     'max_iter' : 200, 
     'random_state' : CFG_P.seed        
 }
@@ -110,8 +113,7 @@ logreg_kwargs = {
 scaler = StandardScaler()
 # scaler = MinMaxScaler()
 
-model_names = ['lgbm_resid_transformer_400_impute',
-               'lgbm_dart_group_rel',
+model_names = ['lgbm_dart_group_rel',
                'lgbm_dart_big_alt_params',
                'keras_transformer_400_impute',
                #'keras_transformer_full_na_imputes',
@@ -186,7 +188,7 @@ df_train = helpers_tr.load_flat_features(tr_feature_files, is_meta=True)
 df_train = pd.concat([df_train.set_index('customer_ID'),
                       pd.read_csv(CFG_P.model_output_dir + f'ryota_0823/ryota_oof_0823.csv')
                                        .set_index('customer_ID'), 
-                      pd.read_csv(CFG_P.model_output_dir + f'angus_0822_main/oof_final.csv')
+                      pd.read_csv(CFG_P.model_output_dir + f'angus_0822_main/oof_ver2.csv')
                                        .set_index('customer_ID')], axis=1).reset_index()
 
 # tr_csv_feature_files = [CFG_P.model_output_dir + f'{m}/oof_preds.csv' for m in csv_model_names] 
@@ -200,8 +202,6 @@ df_train = pd.merge(df_train, pd.read_parquet(CFG_P.output_dir + 'train_labels_w
 # df_train = pd.merge(df_train, pd.read_parquet(CFG_P.output_dir + 'train_labels_w_folds.parquet'),
 #                     on='customer_ID')
 
-df_train.to_parquet(CFG_P.output_dir + 'train_stack_inputs_0824.parquet') 
-
 features = [f for f in df_train.columns if f not in CFG_P.non_features]
 for f in features:
     df_train[f] = df_train[f].clip(lower=.0001, upper=.9999)
@@ -212,10 +212,8 @@ df_test = helpers_tr.load_flat_features(te_feature_files, parser=pd.read_csv, is
 df_test = pd.concat([df_test.set_index('customer_ID'),
                      pd.read_csv(CFG_P.model_output_dir + f'ryota_0823/ryota_sub_0823.csv')
                                       .set_index('customer_ID'),
-                     pd.read_csv(CFG_P.model_output_dir + f'angus_0822_main/sub_final.csv')
+                     pd.read_csv(CFG_P.model_output_dir + f'angus_0822_main/sub_ver2.csv')
                                       .set_index('customer_ID')] , axis=1).reset_index()
-
-df_test.to_parquet(CFG_P.output_dir + 'test_stack_inputs_0824.parquet')
 
 for f in features:
     df_test[f] = df_test[f].clip(lower=.0001, upper=.9999)
@@ -225,8 +223,6 @@ scaler.fit(pd.concat([df_train[features], df_test[features]]))
 df_train[features] = scaler.transform(df_train[features])
 df_test[features] = scaler.transform(df_test[features]) 
 print(df_test[features].corr())
-
-
 
 helpers_tr.train_save_flat_model(df_train, df_test,
                                  helpers_tr.get_logreg_model, logreg_kwargs,

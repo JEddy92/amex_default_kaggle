@@ -57,6 +57,89 @@ def gen_sequence_data(df_in : pd.DataFrame, df_cat_enc : pd.DataFrame):
     # df_in['P_2'] = df_in['P_2'].fillna(0)
     # print(f"Total P_2 null {df_in['P_2'].isnull().sum()}")
 
+    # Ryota's clipping code
+    def clipping(df):
+        df.loc[df['B_1'] < -0.5, 'B_1'] = -0.5
+        df.loc[df['D_39'] > 200, 'D_39'] = 200
+        df.loc[df['B_6'] > 200, 'B_6'] = 200
+        df.loc[df['R_5'] > 50, 'R_5'] = 50
+        df.loc[df['D_41'] > 8, 'D_41'] = 8
+        df.loc[df['D_46'] > 6, 'D_46'] = 6
+        df.loc[df['D_46'] < -5, 'D_46'] = -5
+        df.loc[df['D_49'] > 500, 'D_49'] = 500
+        df.loc[df['B_7'] < -1, 'B_7'] = -1
+        df.loc[df['D_50'] < -5, 'D_50'] = -5
+        df.loc[df['D_50'] > 150, 'D_50'] = 150
+        df.loc[df['B_9'] > 20, 'B_9'] = 20
+        df.loc[df['R_3'] > 70, 'R_3'] = 70
+        df.loc[df['S_5'] > 100, 'S_5'] = 100
+        df.loc[df['B_12'] > 100, 'B_12'] = 100
+        df.loc[df['D_55'] > 2, 'D_55'] = 2
+        df.loc[df['B_14'] > 30, 'B_14'] = 30
+        df.loc[df['B_14'] < -2, 'B_14'] = -2
+        df.loc[df['D_61'] > 50, 'D_61'] = 50
+        df.loc[df['B_15'] < -1, 'B_15'] = -1
+        df.loc[df['D_65'] > 2000, 'D_65'] = 2000
+        df.loc[df['S_12'] > 50, 'S_12'] = 50
+        df.loc[df['B_21'] > 100, 'B_21'] = 100
+        df.loc[df['D_69'] > 1000, 'D_69'] = 1000
+        df.loc[df['D_74'] > 50, 'D_74'] = 50
+        df.loc[df['D_75'] > 50, 'D_75'] = 50
+        df.loc[df['D_76'] > 15, 'D_75'] = 15
+        df.loc[df['B_24'] > 30, 'B_24'] = 30
+        df.loc[df['R_7'] > 300, 'R_7'] = 300
+        df.loc[df['B_25'] < -1, 'B_25'] = -1
+        df.loc[df['B_25'] > 10, 'B_25'] = 10
+        df.loc[df['B_26'] > 500, 'B_26'] = 500
+        df.loc[df['D_79'] > 20, 'D_79'] = 20
+        df.loc[df['R_8'] > 25, 'R_8'] = 25
+        df.loc[df['R_9']==0, 'R_9'] = 1
+        df.loc[df['S_16'] > 150, 'S_16'] = 150
+        df.loc[df['R_10'] > 10, 'R_10'] = 10
+        df.loc[df['R_11'] > 10, 'R_11'] = 10
+        df.loc[df['B_27'] > 0.4, 'B_27'] = 0.4
+        df.loc[df['D_82'] > 6, 'D_82'] = 6
+        df.loc[df['B_28'] > 10, 'B_28'] = 10
+        df.loc[df['R_13'] > 20, 'R_13'] = 20
+        df.loc[df['D_83'] > 20, 'D_83'] = 20
+        df.loc[df['R_14'] > 2000, 'R_14'] = 2000
+        df.loc[df['D_84'] > 35, 'D_84'] = 35
+        df.loc[df['R_16'] > 25, 'R_16'] = 25
+        df.loc[df['R_17'] > 20, 'R_17'] = 20
+        df.loc[df['R_18'] > 15, 'R_18'] = 15
+        df.loc[df['S_19'] > 0.4, 'S_19'] = 0.4
+        df.loc[df['R_20'] > 40, 'R_20'] = 40
+        df.loc[df['S_23'] < -50, 'S_23'] = -50
+        df.loc[df['S_23'] > 50, 'S_23'] = 50
+        df.loc[df['S_25'] > 4, 'S_25'] = 4
+        df.loc[df['S_26'] > 100, 'S_26'] = 100
+        df.loc[df['D_105'] > 4.5, 'D_105'] = 4.5
+        df.loc[df['D_106'] > 3000, 'D_106'] = 3000
+        df.loc[df['D_107'] > 15, 'D_107'] = 15
+        df.loc[df['B_36'] > 0.8, 'B_36'] = 0.8
+        df.loc[df['R_26'] > 250, 'R_26'] = 250
+        df.loc[df['D_108'] > 8, 'D_108'] = 8
+        df.loc[df['D_111'] > 2, 'D_111'] = 2
+        df.loc[df['B_39'] < -0.1, 'B_39'] = -0.1
+        df.loc[df['B_39'] > 2, 'B_39'] = 2
+        df.loc[df['B_40'] > 1000, 'B_40'] = 1000
+        df.loc[df['D_113'] > 20, 'D_113'] = 20
+        df.loc[df['D_122'] > 13, 'D_122'] = 13
+        df.loc[df['D_123'] > 50, 'D_123'] = 50
+        df.loc[df['D_124'] > 60, 'D_124'] = 60
+        df.loc[df['D_125'] > 10, 'D_125'] = 10
+        df.loc[df['B_41'] > 20, 'B_41'] = 20
+        df.loc[df['B_42'] > 7, 'B_42'] = 7
+        df.loc[df['D_132'] > 5, 'D_132'] = 5
+        df.loc[df['D_145'] > 45, 'D_145'] = 45
+        df.loc[df['B_37'] < -2, 'B_37'] = -2
+        df.loc[df['D_59'] > 100, 'D_59'] = 100
+        df.loc[df['S_15'] > 60, 'S_15'] = 60
+
+        return df
+
+    # df_in = clipping(df_in)
+
     df_in['S_2'] = pd.to_datetime(df_in['S_2'])
     df_in['last_date'] = df_in.groupby('customer_ID')['S_2'].transform('last')
     df_in['months_ago'] = (df_in['last_date'].dt.to_period('M') - df_in['S_2'].dt.to_period('M')) \
@@ -95,12 +178,15 @@ def gen_sequence_data(df_in : pd.DataFrame, df_cat_enc : pd.DataFrame):
     # Fill missing null value into missing statements
     print('Filling missing statement null values')
     missing_mask = df_in['missing_statement'] == 1
-    df_in.loc[missing_mask] = MISSING_NULL_VALUE
+    df_in.loc[missing_mask, 
+              [c for c in df_in.columns if c not in ['missing_statement','months_ago']]] = MISSING_NULL_VALUE
+    print(df_in[missing_mask].head(5))
+    print(df_in[missing_mask][['missing_statement','months_ago']].head(5))
     # df_in.loc[~missing_mask] = df_in.loc[~missing_mask].fillna(df_meds) 
     
-    # keep months ago for position feature, but
-    # drop missing statement since should just be masked
-    df_in = df_in.drop(columns=['customer_ID','S_2','last_date','missing_statement']) 
+    # keep months ago and missing statement indicator
+    df_in = df_in.drop(columns=['customer_ID','S_2','last_date']) 
+    dtypes_dict['missing_statement'] = int
     df_in = df_in.astype(dtypes_dict)
 
     # make months ago (position embedding) always last feature for convenience
@@ -124,17 +210,17 @@ def gen_sequence_data(df_in : pd.DataFrame, df_cat_enc : pd.DataFrame):
     return np_return, df_cus
 
 print('Sequence Converting Train')
-df_train = pd.read_parquet(CFG.output_dir + 'train_lgb_imputed.parquet')
+df_train = pd.read_parquet(CFG.output_dir + 'train_lgb_no_lag_imputed.parquet')
 
 # credit to Elias for feature exclusion ideas
 # https://www.kaggle.com/code/gehallak/amex-correlation/notebook
 # column exclusions
-redundant_cols = ['B_1', 'B_11', 'B_23', 'B_37', 'D_103', 'D_118', 
-                  'D_137', 'D_139', 'D_141', 'D_74', 'D_77', 'S_24']
-low_cor_cols = ['B_15', 'B_27', 'D_106', 'D_109', 'D_144', 
-                 'D_69', 'D_73', 'R_18', 'R_23', 'R_28', 'S_12', 'S_18', 'S_19']
+# redundant_cols = ['B_1', 'B_11', 'B_23', 'B_37', 'D_103', 'D_118', 
+#                   'D_137', 'D_139', 'D_141', 'D_74', 'D_77', 'S_24']
+# low_cor_cols = ['B_15', 'B_27', 'D_106', 'D_109', 'D_144', 
+#                  'D_69', 'D_73', 'R_18', 'R_23', 'R_28', 'S_12', 'S_18', 'S_19']
 other_cols = ['D_103','D_139','B_29']
-excl_cols = redundant_cols + low_cor_cols + other_cols  
+excl_cols = other_cols  
 
 df_train = df_train.drop(columns=excl_cols)
 
@@ -161,7 +247,7 @@ del df_train, df_train_cat_enc, seq_train, seq_train_cus
 gc.collect()
 
 print('Sequence Converting Test 0')
-df_test = pd.read_parquet(CFG.output_dir + 'test_lgb_imputed.parquet')
+df_test = pd.read_parquet(CFG.output_dir + 'test_lgb_no_lag_imputed.parquet')
 df_test = df_test.drop(columns=excl_cols)
 df_test_cat_enc = pd.read_parquet(CFG.output_dir + 'test_cat_all_p2_encoded_features.parquet')
 test_cus = df_test['customer_ID'].drop_duplicates()
@@ -183,7 +269,7 @@ del df_test, seq_test, seq_test_cus
 gc.collect()
 
 print('Sequence Converting Test 1')
-df_test = pd.read_parquet(CFG.output_dir + 'test_lgb_imputed.parquet')
+df_test = pd.read_parquet(CFG.output_dir + 'test_lgb_no_lag_imputed.parquet')
 df_test = df_test.drop(columns=excl_cols)
 df_test = df_test[df_test['customer_ID'].isin(cus_chunk_1)]
 gc.collect()
