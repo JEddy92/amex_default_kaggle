@@ -3,6 +3,8 @@ Code for American Express' Default Prediction competition, hosted on Kaggle
 
 # Experiments and Ideas Log
 
+This log is pretty out of date (as of 8/14)
+
 |Idea |Description | Finding|
 --- | --- | ---|
 |Base FE |Aggregates, last rel mean| solid .797 baseline with dart |
